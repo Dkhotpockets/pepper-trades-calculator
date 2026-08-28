@@ -155,13 +155,34 @@ with tab5:
     st.markdown("**Logistics & Shipping Cost Estimator**")
     st.write("Estimate package rates and generate tracking references for trade items.")
     
-    s_type = st.selectbox("Item Class", ["seeds", "sauce"])
+    s_type = st.selectbox("Item Class", ["Seeds (Padded Envelope)", "Hot Sauce (Glass Bottle/Box)"])
     s_weight = st.number_input("Package Weight (oz)", min_value=1.0, value=8.0)
-    s_zone = st.slider("Shipping Distance Zone", min_value=1, max_value=5, value=2)
+    
+    # User-friendly zone mapping
+    zone_selection = st.selectbox(
+        "Shipping Distance", 
+        [
+            "Local / Same State (Zone 1)", 
+            "Regional / Neighboring States (Zone 2)", 
+            "Mid-Distance / Multi-State (Zone 3)", 
+            "National / Coast-to-Coast (Zone 4-5)"
+        ]
+    )
+    
+    # Map user selection back to the underlying calculation integer (1 to 4)
+    zone_mapping = {
+        "Local / Same State (Zone 1)": 1,
+        "Regional / Neighboring States (Zone 2)": 2,
+        "Mid-Distance / Multi-State (Zone 3)": 3,
+        "National / Coast-to-Coast (Zone 4-5)": 4
+    }
+    s_zone = zone_mapping[zone_selection]
+    
     s_carrier = st.selectbox("Carrier", ["USPS", "UPS"])
     
     if st.button("Calculate Shipping & Generate Tracking"):
-        base_rate = 4.50 if s_type == "seeds" else 8.50
+        item_class_key = "seeds" if "Seeds" in s_type else "sauce"
+        base_rate = 4.50 if item_class_key == "seeds" else 8.50
         weight_surcharge = (s_weight / 16.0) * 3.00
         zone_multiplier = 1.0 + (s_zone * 0.1)
         total_cost = round((base_rate + weight_surcharge) * zone_multiplier, 2)
