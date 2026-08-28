@@ -2,12 +2,12 @@ import streamlit as st
 import math
 
 # Configure mobile-friendly page layout
-st.set_page_config(page_title="Pepper Trades Calculators", layout="centered")
-st.title("🌶️ Pepper Trades Calculators")
-st.markdown("Community tools for safe lacto-fermentation and acidification.")
+st.set_page_config(page_title="Pepper Trades Community Hub", layout="centered")
+st.title("🌶️ Pepper Trades Community Hub")
+st.markdown("Tools for safe lacto-fermentation, acidification, and genetic tracking.")
 
-# Create clean mobile navigation tabs
-tab1, tab2 = st.tabs(["Brine & Salt Calculator", "Acidification Engine"])
+# Create clean mobile navigation tabs (Added Seed Genetics tab)
+tab1, tab2, tab3 = st.tabs(["Brine & Salt Calculator", "Acidification Engine", "Seed & Genetics Catalog"])
 
 with tab1:
     st.markdown("**Lacto-Fermentation Brine Calculator**")
@@ -43,17 +43,31 @@ with tab2:
         if target_ph >= current_ph:
             st.warning("Target pH must be lower than current pH.")
         else:
-            # Logarithmic H+ concentration shift
             h_current = 10 ** (-current_ph)
             h_target = 10 ** (-target_ph)
             h_diff = h_target - h_current
-            
-            # 5% Acetic acid baseline concentration shift estimation
             acid_molarity_factor = 0.83 
             base_ml_required = (h_diff / acid_molarity_factor) * mash_volume * 1000
-            
-            # Apply organic buffer coefficient
             final_dose = base_ml_required * buffer_coefficient
-            
             st.success(f"**Add approximately {final_dose:.1f} ml of {acid_type}**")
             st.caption("Always verify final batch with a calibrated pH meter before bottling.")
+
+with tab3:
+    st.markdown("**Seed Lineage & Genetics Catalog**")
+    st.write("Browse rare cultivars, generation stability, and isolation techniques shared by members.")
+    
+    # Mock data structure (this will pull from your Supabase database later)
+    sample_catalog = [
+        {"Strain": "Reaper x Primo", "Species": "C. chinense", "Generation": "F4", "Isolation": "Bagged Blossom", "Heat": "Superhot"},
+        {"Strain": "Ghost Pepper (Smooth)", "Species": "C. chinense", "Generation": "Open Pollinated", "Isolation": "Isolated Box", "Heat": "Superhot"},
+        {"Strain": "Aji Lemon Drop", "Species": "C. baccatum", "Generation": "Stable", "Isolation": "Open", "Heat": "Medium"}
+    ]
+    
+    heat_filter = st.selectbox("Filter by Heat Level", ["All", "Superhot", "Medium"])
+    
+    for item in sample_catalog:
+        if heat_filter == "All" or item["Heat"] == heat_filter:
+            with st.expander(f"{item['Strain']} ({item['Generation']})"):
+                st.write(f"**Species:** {item['Species']}")
+                st.write(f"**Isolation Method:** {item['Isolation']}")
+                st.write(f"**Heat Profile:** {item['Heat']}")
