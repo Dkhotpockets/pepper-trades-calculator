@@ -66,25 +66,59 @@ with tab3:
     st.markdown("**Seed Lineage & Genetics Catalog**")
     st.write("Browse rare cultivars, generation stability, and isolation techniques shared by members.")
     
-    # Fetch live data from Supabase
-    try:
-        response = supabase.table("strains").select("*").execute()
-        live_catalog = response.data
-    except Exception as e:
-        st.error(f"Could not load database records: {e}")
-        live_catalog = []
-
-    heat_filter = st.selectbox("Filter by Heat Level", ["All", "Superhot", "Hot", "Mild", "Medium"])
+    # Sub-tabs inside the catalog for viewing vs submitting
+    catalog_sub1, catalog_sub2 = st.tabs(["Browse Catalog", "List New Strain"])
     
-    if not live_catalog:
-        st.info("No strains logged in the database yet. Add your first genetic line!")
-    else:
-        for item in live_catalog:
-            heat_lvl = item.get("heat_level", "Unknown")
-            if heat_filter == "All" or heat_lvl.lower() == heat_filter.lower():
-                with st.expander(f"{item.get('strain_name')} ({item.get('generation')})"):
-                    st.write(f"**Species:** {item.get('species')}")
-                    st.write(f"**Isolation Method:** {item.get('isolation_type')}")
-                    st.write(f"**Heat Profile:** {heat_lvl}")
-                    if item.get('description'):
-                        st.write(f"**Notes:** {item.get('description')}")
+    with catalog_sub1:
+        # Fetch live data from Supabase
+        try:
+            response = supabase.table("strains").select("*").execute()
+            live_catalog = response.data
+        except Exception as e:
+            st.error(f"Could not load database records: {e}")
+            live_catalog = []
+
+        heat_filter = st.selectbox("Filter by Heat Level", ["All", "Superhot", "Hot", "Mild", "Medium"])
+        
+        if not live_catalog:
+            st.info("No strains logged in the database yet. Use the 'List New Strain' tab to add one!")
+        else:
+            for item in live_catalog:
+                heat_lvl = item.get("heat_level", "Unknown")
+                if heat_filter == "All" or heat_lvl.lower() == heat_filter.lower():
+                    with st.expander(f"{item.get('strain_name')} ({item.get('generation')})"):
+                        st.write(f"**Species:** {item.get('species')}")
+                        st.write(f"**Isolation Method:** {item.get('isolation_type')}")
+                        st.write(f"**Heat Profile:** {heat_lvl}")
+                        if item.get('description'):
+                            st.write(f"**Notes:** {item.get('description')}")
+                            
+    with catalog_sub2:
+        st.markdown("### Register a Genetic Line")
+        with st.form("strain_form"):
+            strain_name = st.text_input("Strain Name / Cross (e.g., Reaper x Primo)")
+            species = st.selectbox("Species", ["Capsicum chinense", "Capsicum annuum", "Capsicum baccatum", "Capsicum pubescens", "Wild/Other"])
+            generation = st.text_input("Generation / Stability (e.g., F4, Open Pollinated, Stable)")
+            isolation_type = st.selectbox("Isolation Technique", ["Bagged Blossom", "Isolated Box/Tent", "Open Pollinated", "Hand Pollinated"])
+            heat_level = st.selectbox("Heat Profile", ["Superhot", "Hot", "Medium", "Mild"])
+            description = st.text_area("Phenotype Notes & Characteristics (e.g., smooth pods, zero ridges, citrus aroma)")
+            
+            submit_button = st.form_submit_button("Submit to Community Database")
+            
+            if submit_button:
+                if not strain_name or not generation:
+                    st.warning("Please fill out the strain name and generation fields.")
+                else:
+                    try:
+                        supabase.table("strains").insert({
+                            "strain_name": strain_name,
+                            "species": species,
+                            "generation": generation,
+                            "isolation_type": isolation_type,
+                            "heat_level": heat_level,
+                            "description": description
+                        }).execute()
+                        st.success(f"Successfully added '{strain_name}' to the community catalog!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Failed to insert record: {e}")
