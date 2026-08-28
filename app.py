@@ -1,12 +1,22 @@
 import streamlit as st
 import math
+from supabase import create_client
+
+# Initialize Supabase connection using Streamlit secrets
+@st.cache_resource
+def init_connection():
+    url = st.secrets["supabase"]["url"]
+    key = st.secrets["supabase"]["key"]
+    return create_client(url, key)
+
+supabase = init_connection()
 
 # Configure mobile-friendly page layout
 st.set_page_config(page_title="Pepper Trades Community Hub", layout="centered")
 st.title("🌶️ Pepper Trades Community Hub")
 st.markdown("Tools for safe lacto-fermentation, acidification, and genetic tracking.")
 
-# Create clean mobile navigation tabs (Added Seed Genetics tab)
+# Create clean mobile navigation tabs
 tab1, tab2, tab3 = st.tabs(["Brine & Salt Calculator", "Acidification Engine", "Seed & Genetics Catalog"])
 
 with tab1:
@@ -56,18 +66,25 @@ with tab3:
     st.markdown("**Seed Lineage & Genetics Catalog**")
     st.write("Browse rare cultivars, generation stability, and isolation techniques shared by members.")
     
-    # Mock data structure (this will pull from your Supabase database later)
-    sample_catalog = [
-        {"Strain": "Reaper x Primo", "Species": "C. chinense", "Generation": "F4", "Isolation": "Bagged Blossom", "Heat": "Superhot"},
-        {"Strain": "Ghost Pepper (Smooth)", "Species": "C. chinense", "Generation": "Open Pollinated", "Isolation": "Isolated Box", "Heat": "Superhot"},
-        {"Strain": "Aji Lemon Drop", "Species": "C. baccatum", "Generation": "Stable", "Isolation": "Open", "Heat": "Medium"}
-    ]
+    # Fetch live data from Supabase
+    try:
+        response = supabase.table("strains").select("*").execute()
+        live_catalog = response.data
+    except Exception as e:
+        st.error(f"Could not load database records: {e}")
+        live_catalog = []
+
+    heat_filter = st.selectbox("Filter by Heat Level", ["All", "Superhot", "Hot", "Mild", "Medium"])
     
-    heat_filter = st.selectbox("Filter by Heat Level", ["All", "Superhot", "Medium"])
-    
-    for item in sample_catalog:
-        if heat_filter == "All" or item["Heat"] == heat_filter:
-            with st.expander(f"{item['Strain']} ({item['Generation']})"):
-                st.write(f"**Species:** {item['Species']}")
-                st.write(f"**Isolation Method:** {item['Isolation']}")
-                st.write(f"**Heat Profile:** {item['Heat']}")
+    if not live_catalog:
+        st.info("No strains logged in the database yet. Add your first genetic line!")
+    else:
+        for item in live_catalog:
+            heat_lvl = item.get("heat_level", "Unknown")
+            if heat_filter == "All" or heat_lvl.lower() == heat_filter.lower():
+                with st.expander(f"{item.get('strain_name')} ({item.get('generation')})"):
+                    st.write(f"**Species:** {item.get('species')}")
+                    st.write(f"**Isolation Method:** {item.get('isolation_type')}")
+                    st.write(f"**Heat Profile:** {heat_lvl}")
+                    if item.get('description'):
+                        st.write(f"**Notes:** {item.get('description')}")
